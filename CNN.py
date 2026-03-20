@@ -56,6 +56,6 @@ x = Network.convultion(Image, filters = 32, filter_size = 3)
 x = Network.pooling(x)
 x = Network.relu(x)
 x = Network.flatten(x)
-x = Network.NeuralNetworkClassique(x, out_features=256)
+x = Network.NeuralNetworkClassique(x)
 x = Network.softmax(x)
 
