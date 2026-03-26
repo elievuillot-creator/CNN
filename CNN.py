@@ -44,6 +44,13 @@ class CNN:
     def convolution(self, img, t):
         img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)
         featureINI = self.extract_patches(img)
+        mat_filtre=np.zeros((featureINI.size-self.filters.shape[0]+1))
+        for i in range(0,featureINI.size-1):
+            mat_filtre[i]= self.produit_sca(featureINI[i],self.filters[t])
+        return mat_filtre
+
+
+
 
 
         # sortie : tableau "feature_maps"
