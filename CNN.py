@@ -6,10 +6,11 @@ class CNN:
         self.NbConvolution = NbConvolution
         self.filtersize = filtersize
         self.filters = {}  # dictionnaire ayant en clé le numéro de la convolution et en valeur associé la matrice filtre
+        self.resultconvul = {}
         for i in range(1, NbConvolution+1):
             self.filters[i] = np.ones((self.filtersize, self.filtersize))
 
-    def extract_patches(self, img, stride=1):
+    def extract_patches(self, img):
         H, W = img.shape # récupère les dimensions de la feature map
 
         kH, kW = (self.filtersize, self.filtersize)  # on récup la hauteur et largeur du flitre (tjrs carré)
@@ -26,9 +27,9 @@ class CNN:
 
         for i in range(out_H):
             for j in range(out_W):
-                row = i * stride
-                col = j * stride
-                patches[i, j] = feature_map[row:row + kH, col:col + kW]
+                row = i
+                col = j
+                patches[i, j] = img[row:row + kH, col:col + kW]
 
         return patches
 
@@ -40,22 +41,18 @@ class CNN:
 
 
 
-    def convolution(self, img, filtre):
+    def convolution(self, img, t):
         img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)
         featureINI = self.extract_patches(img)
-
-
-
-
 
 
         # sortie : tableau "feature_maps"
 
         pass
 
-    def relu(self, feature_maps):
-        # transforme les valeurs négatives en 0
-        pass
+    def relu(self, img):
+        return np.maximum(0, img)
+
 
     def pooling(self, feature_maps, size=2, methode = "MAX"):
 
@@ -73,26 +70,23 @@ class CNN:
 
         pass
 
-    def NeuralNetworkClassique(self, vecteur):
-        pass
 
     def softmax(self, vecteur):
 
         # Convertit les scores bruts en probabilités (somme = 1).
-
         pass
+
+
+    def forward(self, img):
+        for i in range(1, self.NbConvolution+1):
+            self.convolution(img,i)
 
 
 
 
 #exemple main :
 
-Network = CNN()
 
-x = Network.convultion(Image, filters = 32, filter_size = 3)
-x = Network.pooling(x)
-x = Network.relu(x)
-x = Network.flatten(x)
-x = Network.NeuralNetworkClassique(x)
-x = Network.softmax(x)
+
+
 
