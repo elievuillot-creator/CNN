@@ -39,23 +39,17 @@ class CNN:
             for j in range(0,A.shape[0]):
                 produit+= A[i,j]*B[i,j]
 
-
-
-    def convolution(self, img, t):
-        img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)  # padding
-        featureINI = self.extract_patches(img)
-        mat_filtre=np.zeros((featureINI.size-self.filters.shape[0]+1))
-        for i in range(0,featureINI.size-1):
-            mat_filtre[i]= self.produit_sca(featureINI[i],self.filters[t])
+    def ApplySca(self, MatriceDeMatrice,t):
+        mat_filtre = np.zeros((MatriceDeMatrice.size - self.filters[t].shape[0] + 1))
+        for i in range(0, MatriceDeMatrice.size - 1):
+            mat_filtre[i] = self.produit_sca(MatriceDeMatrice[i], self.filters[t])
         return mat_filtre
 
-
-
-
-
-        # sortie : tableau "feature_maps"
-
-        pass
+    def convolution(self, img, t):
+        img = np.pad(img, pad_width=(self.filtersize - 1)//2, mode='constant', constant_values=0)  # padding
+        featureINI = self.extract_patches(img)
+        result = self.ApplySca(featureINI, t)
+        return result
 
     def relu(self, img):
         return np.maximum(0, img)
@@ -104,6 +98,15 @@ class CNN:
             img =self.relu(img)
             img = self.pooling(img)
             self.resultconvul[i]=img
+
+        return(img)
+
+
+
+Network = CNN(3,3)
+img = np.ones((64, 64))
+print(Network.forward(img))
+
 
 
 
