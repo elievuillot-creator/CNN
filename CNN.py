@@ -42,7 +42,7 @@ class CNN:
 
 
     def convolution(self, img, t):
-        img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)
+        img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)  # padding
         featureINI = self.extract_patches(img)
         mat_filtre=np.zeros((featureINI.size-self.filters.shape[0]+1))
         for i in range(0,featureINI.size-1):
@@ -60,13 +60,23 @@ class CNN:
     def relu(self, img):
         return np.maximum(0, img)
 
+    def pooling(self, img , pool_size=2, method = "Max"):
+        H, W = img.shape
+        pH, pW = pool_size, pool_size
 
-    def pooling(self, feature_maps, size=2, methode = "MAX"):
+        out_H = (H - pH) // 3
+        out_W = (W - pW) // 3
 
-        # prend en entrée la feature_maps après passage de la RELU
-        # garde le max des 4 pixel pris (car 2x2)
+        output = np.zeros((out_H, out_W))
 
-        pass
+        for i in range(out_H):
+            for j in range(out_W):
+                row = i * 2
+                col = j * 2
+                fenetre = img[row:row + pH, col:col + pW]
+                output[i, j] = np.max(fenetre)
+
+        return output
 
     def flatten(self, feature_maps):
 
@@ -85,13 +95,18 @@ class CNN:
 
 
     def forward(self, img):
+
+        # enchainement des convolutions et sauvegarde des résultats :
+
+        self.resultconvul[0] = img
         for i in range(1, self.NbConvolution+1):
-            self.convolution(img,i)
+            img = self.convolution(img,i)
+            img =self.relu(img)
+            img = self.pooling(img)
+            self.resultconvul[i]=img
 
 
 
-
-#exemple main :
 
 
 
