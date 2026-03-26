@@ -1,15 +1,44 @@
 # Construction de la structure
-
+import numpy as np
 class CNN:
 
-    def __init__(self):
+    def __init__(self, filtersize, NbConvolution):
+        self.NbConvolution = NbConvolution
+        self.filtersize = filtersize
+        self.filters = {}  # dictionnaire ayant en clé le numéro de la convolution et en valeur associé la matrice filtre
+        for i in range(1, NbConvolution+1):
+            self.filters[i] = np.ones((self.filtersize, self.filtersize))
+
+    def extract_patches(self, img, stride=1):
+        H, W = img.shape # récupère les dimensions de la feature map
+
+        kH, kW = (self.filtersize, self.filtersize)  # on récup la hauteur et largeur du flitre (tjrs carré)
+
+        # calcule de la taille de la matrice de sortie :
+        # le // c'est pour division entière
+
+        out_H = (H - kH) // 2
+        out_W = (W - kW) // 2
+
+        # création d'un tableau avec que des zero dans lequel on mettera au fur et à mesure les matrices extraites
+
+        patches = np.zeros((out_H, out_W, kH, kW))
+
+        for i in range(out_H):
+            for j in range(out_W):
+                row = i * stride
+                col = j * stride
+                patches[i, j] = feature_map[row:row + kH, col:col + kW]
+
+        return patches
 
 
-    def convolution(self, image, filters, filter_size):
+    def convolution(self, img, filtre):
+        img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)
+        featureINI = self.extract_patches(img)
 
-        # image : en tableau de pixel
-        # filters : nombre de filtres
-        # filter_size : taillle des filtres (donc genre 3 pour 3x3)
+
+
 
 
         # sortie : tableau "feature_maps"
