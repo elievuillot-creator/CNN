@@ -32,10 +32,18 @@ class CNN:
 
         return patches
 
+    def produit_sca(self,A,B):#A et B étant des matrices, pour convultion donner la matrice pour convolution t
+        produit=0
+        for i in range(0,A.shape[0]):
+            for j in range(0,A.shape[0]):
+                produit+= A[i,j]*B[i,j]
+
+
 
     def convolution(self, img, filtre):
         img = np.pad(img, pad_width=(self.filtersize - 1)/2, mode='constant', constant_values=0)
         featureINI = self.extract_patches(img)
+
 
 
 
