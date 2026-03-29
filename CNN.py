@@ -18,8 +18,8 @@ class CNN:
         # calcule de la taille de la matrice de sortie :
         # le // c'est pour division entière
 
-        out_H = (H - kH) // 2
-        out_W = (W - kW) // 2
+        out_H = H - kH + 1
+        out_W = W - kW + 1
 
         # création d'un tableau avec que des zero dans lequel on mettera au fur et à mesure les matrices extraites
 
@@ -38,11 +38,16 @@ class CNN:
         for i in range(0,A.shape[0]):
             for j in range(0,A.shape[0]):
                 produit+= A[i,j]*B[i,j]
+        return produit
 
-    def ApplySca(self, MatriceDeMatrice,t):
-        mat_filtre = np.zeros((MatriceDeMatrice.size - self.filters[t].shape[0] + 1))
-        for i in range(0, MatriceDeMatrice.size - 1):
-            mat_filtre[i] = self.produit_sca(MatriceDeMatrice[i], self.filters[t])
+    def ApplySca(self, MatriceDeMatrice, t):
+        out_H, out_W, _, _ = MatriceDeMatrice.shape # donne le nombre de ligne et de colonne de la matrice de matrice
+
+        mat_filtre = np.zeros((out_H, out_W))
+
+        for i in range(out_H):
+            for j in range(out_W):
+                mat_filtre[i, j] = self.produit_sca(MatriceDeMatrice[i][j],self.filters[t])
         return mat_filtre
 
     def convolution(self, img, t):
