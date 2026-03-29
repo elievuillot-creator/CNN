@@ -63,8 +63,8 @@ class CNN:
         H, W = img.shape
         pH, pW = pool_size, pool_size
 
-        out_H = (H - pH) // 3
-        out_W = (W - pW) // 3
+        out_H = H // pH # j'ai cahnger le pooling car trop pussiant ca ne marchai pas avec des petites matrices
+        out_W = W // pW
 
         output = np.zeros((out_H, out_W))
 
@@ -78,6 +78,7 @@ class CNN:
         return output
 
     def flatten(self, feature_maps):
+        return feature_maps.flatten() #focntion de numpy qui transforme en vecteur
 
         # Aplatit le tableau 3D en un vecteur 1D
 
@@ -88,6 +89,8 @@ class CNN:
 
 
     def softmax(self, vecteur):
+        exps = np.exp(vecteur - np.max(vecteur))  # fonction mathématique
+        return exps / np.sum(exps)
 
         # Convertit les scores bruts en probabilités (somme = 1).
         pass
@@ -103,13 +106,16 @@ class CNN:
             img =self.relu(img)
             img = self.pooling(img)
             self.resultconvul[i]=img
+        vecteur = self.flatten(img)
+        proba = self.softmax(vecteur)
+        return proba
 
-        return(img)
+
 
 
 
 Network = CNN(3,3)
-img = np.ones((64, 64))
+img = np.random.randint(0, 10, (64,64))
 print(Network.forward(img))
 
 
