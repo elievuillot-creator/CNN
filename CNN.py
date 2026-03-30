@@ -5,10 +5,12 @@ class CNN:
     def __init__(self, filtersize, NbConvolution):
         self.NbConvolution = NbConvolution
         self.filtersize = filtersize
-        self.filters = {}  # dictionnaire ayant en clé le numéro de la convolution et en valeur associé la matrice filtre
+        self.filters = {}
         self.resultconvul = {}
+        self.biases = {}  #  un biais scalaire par couche de convolution
         for i in range(1, NbConvolution+1):
             self.filters[i] = np.ones((self.filtersize, self.filtersize))
+            self.biases[i] = 0.0  #  initialisé à zéro
 
     def extract_patches(self, img):
         H, W = img.shape # récupère les dimensions de la feature map
@@ -51,9 +53,10 @@ class CNN:
         return mat_filtre
 
     def convolution(self, img, t):
-        img = np.pad(img, pad_width=(self.filtersize - 1)//2, mode='constant', constant_values=0)  # padding
+        img = np.pad(img, pad_width=(self.filtersize - 1)//2, mode='constant', constant_values=0)
         featureINI = self.extract_patches(img)
         result = self.ApplySca(featureINI, t)
+        result = result + self.biases[t]  #  ajout du biais sur toute la feature map
         return result
 
     def relu(self, img):
@@ -94,7 +97,6 @@ class CNN:
 
         # Convertit les scores bruts en probabilités (somme = 1).
         pass
-
 
     def forward(self, img):
 
