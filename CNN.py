@@ -2,14 +2,29 @@
 import numpy as np
 class CNN:
 
-    def __init__(self, filtersize, NbConvolution):
+    def __init__(self, filtersize, NbConvolution, NbFilters):
         self.NbConvolution = NbConvolution
         self.filtersize = filtersize
         self.filters = {}
         self.resultconvul = {}
         self.biases = {}  #  un biais scalaire par couche de convolution
+        self.NbFilters = []
+        self.Deep = []
+        self.Deep.append(3)
+
+        # calcul des nb de cannaux par filtres de chaque convolution :
+        for i in range(2, NbConvolution+1):
+            self.Deep.append(self.NbFilters[i-1])
+
+        # Initialisation des filtres :
+
         for i in range(1, NbConvolution+1):
-            self.filters[i] = np.ones((self.filtersize, self.filtersize))
+            self.filters[i] = []
+            for j in range(self.NbFilters[i]):
+                self.filters[i].append([])
+            for k in range(self.NbFilters[i]):
+                for p in range(self.Deep[i]):
+                    self.filters[i][k].append(np.random.rand(self.filtersize, self.filtersize))
             self.biases[i] = 0.0  #  initialisé à zéro
 
     def extract_patches(self, img):
@@ -42,21 +57,20 @@ class CNN:
                 produit+= A[i,j]*B[i,j]
         return produit
 
-    def ApplySca(self, MatriceDeMatrice, t):
+    def ApplySca(self, MatriceDeMatrice, FILTRE):
         out_H, out_W, _, _ = MatriceDeMatrice.shape # donne le nombre de ligne et de colonne de la matrice de matrice
 
         mat_filtre = np.zeros((out_H, out_W))
 
         for i in range(out_H):
             for j in range(out_W):
-                mat_filtre[i, j] = self.produit_sca(MatriceDeMatrice[i][j],self.filters[t])
+                mat_filtre[i, j] = self.produit_sca(MatriceDeMatrice[i][j],FILTRE)
         return mat_filtre
 
-    def convolution(self, img, t):
+    def convolution(self, img, FILTRE):
         img = np.pad(img, pad_width=(self.filtersize - 1)//2, mode='constant', constant_values=0)
         featureINI = self.extract_patches(img)
-        result = self.ApplySca(featureINI, t)
-        result = result + self.biases[t]  #  ajout du biais sur toute la feature map
+        result = self.ApplySca(featureINI, FILTRE)
         return result
 
     def relu(self, img):
@@ -77,19 +91,35 @@ class CNN:
                 col = j * 2
                 fenetre = img[row:row + pH, col:col + pW]
                 output[i, j] = np.max(fenetre)
-
         return output
 
 
+    def Forward2(self, img, filter):
+        img = self.convolution(img, filter)
+        img = self.relu(img)
+        img = self.pooling(img)
+        return img
 
-    def passage_dim_3D_2D(self,liste_de_matrice):
-        H, W = liste_de_matrice[0].shape #récuper la taille des matric filtré
+    def passage_dim_3D_2D(self, liste_de_matrice):
+        H, W = liste_de_matrice[0].shape  # récuper la taille des matric filtré
         nouv_matrice_2D = np.zeros((H, W))
         for j in range(len(liste_de_matrice)):
             nouv_matrice_2D += liste_de_matrice[j]
-        return nouv_matrice_2D #renvoie une matrice 2D qui est est la somme des matrcie filtré
+        return nouv_matrice_2D  # renvoie une matrice 2D qui est est la somme des matrcie filtré
 
+    def ConvoAgre(self, Mat, NumConvo):
+        liste = []
+        list1 = []
+        Result = []
+        for i in range(self.Deep[NumConvo]):
+           liste.append(Mat[:, :, i])
+        for k in range(1, self.NbFilters[NumConvo]+1):  # pour un filtre
+            for j in range(self.Deep[NumConvo]):  # pour une couche
+                list1.append(self.Forward2(liste[j], self.filters[NumConvo][k][j]))
+            Result.append(self.passage_dim_3D_2D(list1))  # donc met dans les résultat de la convolution la matrice 2D renvoyée par le premier filtre
+            Result = np.stack(Result, axis=2)
 
+            # donc list1 contient les trois matrices résultants du filtre que la fct de albin doit mettre en 1
 
     def flatten(self, feature_maps):
         return feature_maps.flatten() #focntion de numpy qui transforme en vecteur
@@ -102,7 +132,6 @@ class CNN:
         pass
 
 
-
     def softmax(self, vecteur):
         exps = np.exp(vecteur - np.max(vecteur))  # fonction mathématique
         return exps / np.sum(exps)
@@ -110,29 +139,11 @@ class CNN:
         # Convertit les scores bruts en probabilités (somme = 1).
         pass
 
-    def forward(self, img):
-
-        # enchainement des convolutions et sauvegarde des résultats :
-
-        self.resultconvul[0] = img
-        for i in range(1, self.NbConvolution+1):
-            img = self.convolution(img,i)
-            img =self.relu(img)
-            img = self.pooling(img)
-            self.resultconvul[i]=img
-        vecteur = self.flatten(img)
-        proba = self.softmax(vecteur)
-        return proba
 
 
-
-
-
-Network = CNN(3,3)
+Network = CNN(3,3,[3,2,4] )
 img = np.random.randint(0, 10, (64,64))
 print(Network.forward(img))
-
-
 
 
 
