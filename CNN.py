@@ -80,6 +80,17 @@ class CNN:
 
         return output
 
+
+
+    def passage_dim_3D_2D(self,liste_de_matrice):
+        H, W = liste_de_matrice[0].shape #récuper la taille des matric filtré
+        nouv_matrice_2D = np.zeros((H, W))
+        for j in range(len(liste_de_matrice)):
+            nouv_matrice_2D += liste_de_matrice[j]
+        return nouv_matrice_2D #renvoie une matrice 2D qui est est la somme des matrcie filtré
+
+
+
     def flatten(self, feature_maps):
         return feature_maps.flatten() #focntion de numpy qui transforme en vecteur
 
@@ -89,6 +100,7 @@ class CNN:
         # Sortie  : vecteur
 
         pass
+
 
 
     def softmax(self, vecteur):
