@@ -134,7 +134,6 @@ class CNN:
             self.resultconvul[i] = self.ConvoAgre(img, i)
             img = self.resultconvul[i]
         vector_flat = self.flatten(img)
-
         return img
 
 
@@ -149,13 +148,5 @@ class CNN:
         pass
 
 
-
-CNN = CNN(3, 2, [2,2])
-test1 = np.ones((64,64))
-test2 = np.ones((64,64))
-test3 = np.ones((64,64))
-test = np.stack([test1,test2,test3], axis=2)
-print(CNN.UltimateForward(test))
-print(np.shape(CNN.UltimateForward(test)))
 
 

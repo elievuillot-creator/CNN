@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 #
 # MNIST Data Loader Class
 #
-class MnistDataloader(object):   # on travail avec du 28x28
+class MnistDataloader(object):
 
     def __init__(self): # training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath):
 
