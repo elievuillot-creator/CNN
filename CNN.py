@@ -8,24 +8,27 @@ class CNN:
         self.filters = {}
         self.resultconvul = {}
         self.biases = {}  #  un biais scalaire par couche de convolution
-        self.NbFilters = []
+        self.NbFilters = NbFilters
         self.Deep = []
         self.Deep.append(3)
+        self.Biais = {}
 
         # calcul des nb de cannaux par filtres de chaque convolution :
-        for i in range(2, NbConvolution+1):
+        for i in range(1, NbConvolution):
             self.Deep.append(self.NbFilters[i-1])
 
         # Initialisation des filtres :
 
-        for i in range(1, NbConvolution+1):
+        for i in range(0, NbConvolution):
+            self.Biais[i] = []
             self.filters[i] = []
             for j in range(self.NbFilters[i]):
                 self.filters[i].append([])
+                self.Biais[i].append(1)
             for k in range(self.NbFilters[i]):
                 for p in range(self.Deep[i]):
                     self.filters[i][k].append(np.random.rand(self.filtersize, self.filtersize))
-            self.biases[i] = 0.0  #  initialisé à zéro
+
 
     def extract_patches(self, img):
         H, W = img.shape # récupère les dimensions de la feature map
@@ -105,7 +108,7 @@ class CNN:
         nouv_matrice_2D = np.zeros((H, W))
         for j in range(len(liste_de_matrice)):
             nouv_matrice_2D += liste_de_matrice[j]
-        return nouv_matrice_2D  # renvoie une matrice 2D qui est est la somme des matrcie filtré
+        return nouv_matrice_2D # renvoie une matrice 2D qui est est la somme des matrcie filtré
 
     def ConvoAgre(self, Mat, NumConvo):
         liste = []
@@ -113,23 +116,29 @@ class CNN:
         Result = []
         for i in range(self.Deep[NumConvo]):
            liste.append(Mat[:, :, i])
-        for k in range(1, self.NbFilters[NumConvo]+1):  # pour un filtre
+        for k in range(0, self.NbFilters[NumConvo]):  # pour un filtre
             for j in range(self.Deep[NumConvo]):  # pour une couche
                 list1.append(self.Forward2(liste[j], self.filters[NumConvo][k][j]))
-            Result.append(self.passage_dim_3D_2D(list1))  # donc met dans les résultat de la convolution la matrice 2D renvoyée par le premier filtre
-            Result = np.stack(Result, axis=2)
-
+            Result.append(self.pooling(self.relu(self.passage_dim_3D_2D(list1) + self.Biais[NumConvo][k])))  # donc met dans les résultat de la convolution la matrice 2D renvoyée par le premier filtre
+        Result = np.stack(Result, axis=2)
+        return Result
             # donc list1 contient les trois matrices résultants du filtre que la fct de albin doit mettre en 1
 
     def flatten(self, feature_maps):
-        return feature_maps.flatten() #focntion de numpy qui transforme en vecteur
+        return feature_maps.flatten()
 
-        # Aplatit le tableau 3D en un vecteur 1D
 
-        # Entrée  : feature_maps
-        # Sortie  : vecteur
+    def UltimateForward(self, img):
+        n = self.NbConvolution
+        for i in range(0,n):
+            self.resultconvul[i] = self.ConvoAgre(img, i)
+            img = self.resultconvul[i]
+        vector_flat = self.flatten(img)
 
-        pass
+        return img
+
+
+
 
 
     def softmax(self, vecteur):
@@ -141,13 +150,12 @@ class CNN:
 
 
 
-Network = CNN(3,3,[3,2,4] )
-img = np.random.randint(0, 10, (64,64))
-print(Network.forward(img))
-
-
-
-
-
+CNN = CNN(3, 2, [2,2])
+test1 = np.ones((64,64))
+test2 = np.ones((64,64))
+test3 = np.ones((64,64))
+test = np.stack([test1,test2,test3], axis=2)
+print(CNN.UltimateForward(test))
+print(np.shape(CNN.UltimateForward(test)))
 
 
