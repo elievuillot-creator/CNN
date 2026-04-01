@@ -29,26 +29,29 @@ class MLP:
         """
         x : vecteur 1D ou (1, N) — typiquement la sortie aplatie (flatten) du CNN
 
-        À chaque couche, on calcule :
-            z = activation_courante · W + b   (produit scalaire vectoriel)
-            a = sigmoid(z)                    (activation neurone par neurone)
+        Couches cachées → sigmoid
+        Couche de sortie → softmax (somme = 1, interprétable comme des probas)
 
         Retourne : liste de tous les vecteurs d'activation, entrée comprise
                    activations[0]  = vecteur d'entrée  (1, N)
-                   activations[-1] = vecteur de sortie  (1, nb_classes)
+                   activations[-1] = vecteur de sortie (1, nb_classes) somme = 1
         """
         # On force le vecteur en forme (1, N) pour les produits matriciels
         activation = x.reshape(1, -1)
         activations = [activation]  # on garde TOUTES les activations pour la backprop
 
-        for W, b in zip(self.poids, self.biais):
+        for i, (W, b) in enumerate(zip(self.poids, self.biais)):
             # z est un vecteur (1, n_suiv) : une valeur par neurone de la couche suivante
             z = np.dot(activation, W) + b
-            # activation devient le nouveau vecteur (1, n_suiv)
-            activation = self._sigmoid(z)
+            # Dernière couche, softmax (somme = 1)
+            if i == len(self.poids) - 1:
+                activation = self._softmax(z)
+            # Couches cachées, sigmoid
+            else:
+                activation = self._sigmoid(z)
             activations.append(activation)
 
-        return activations  # activations[-1] = vecteur de sortie final
+        return activations  # activations[-1] = vecteur de probas, somme = 1
 
 
     def delta_mat(self, label_vector, activations):
@@ -61,28 +64,24 @@ class MLP:
 
         Retourne : liste de vecteurs delta, un par couche
                    deltas[-1] = erreur en sortie
-                   deltas[1]  = gradient à renvoyer vers le CNN (couche d'entrée exclue)
+                   deltas[1]  = gradient à renvoyer vers le CNN
         """
         # On initialise tous les deltas à zéro, même forme que les activations
         deltas = [np.zeros_like(a) for a in activations]
 
-        # Couche de sortie
-        # Erreur = différence entre ce qu'on voulait et ce qu'on a obtenu (vecteur)
-        erreur_sortie = label_vector - activations[-1]
-        # Delta sortie = erreur * dérivée sigmoid (neurone par neurone)
-        deltas[-1] = erreur_sortie * self._sigmoid_deriv(activations[-1])
+        deltas[-1] = activations[-1] - label_vector
 
-        # Couches cachées (on remonte de l'avant-dernière vers la deuxième)
+
+        # On remonte de l'avant-dernière vers la deuxième
         # On s'arrête à i=1 : deltas[0] (entrée) n'a pas de poids à mettre à jour
         for i in range(len(self.poids) - 1, 0, -1):
-            # On propage le delta suivant à travers W^T pour obtenir l'erreur de cette couche
-            # erreur_prop est un vecteur (1, n_couche_i)
+            # On propage le delta suivant à travers W^T
             erreur_prop = np.dot(deltas[i + 1], self.poids[i].T)
-            # Delta couche i = erreur propagée * dérivée sigmoid de cette couche
+            # Delta couche i = erreur propagée * dérivée sigmoid
             deltas[i] = erreur_prop * self._sigmoid_deriv(activations[i])
 
         return deltas
-        # Note : deltas[1] contient le gradient à rétropropager vers ton CNN
+        # deltas[1] contient le gradient à rétropropager vers le CNN
 
     def backwardpropagation(self, deltas, activations):
         """
@@ -90,29 +89,16 @@ class MLP:
         À appeler juste après delta_mat().
 
         Pour chaque couche i :
-            ΔW = activation[i]^T · delta[i+1]   (produit externe de deux vecteurs → matrice)
+            ΔW = activation[i]^T · delta[i+1]   (produit externe → matrice)
             W  = W + lr * ΔW
             b  = b + lr * delta[i+1]
         """
         for i in range(len(self.poids)):
-            # gradient est une matrice (n_i, n_i+1) : variation idéale de chaque poids
-            # c'est le produit externe entre le vecteur activation et le vecteur delta
+            # produit externe entre vecteur activation et vecteur delta → matrice gradient
             gradient       = np.dot(activations[i].T, deltas[i + 1])
             self.poids[i] += self.app * gradient
             self.biais[i] += self.app * deltas[i + 1]
 
-
-    def gradient_vers_cnn(self):
-        """
-        À appeler après delta_mat() pour récupérer le gradient
-        à rétropropager dans les couches convolutives du CNN.
-
-        Retourne un vecteur (1, taille_entree) que le CNN utilisera
-        pour mettre à jour ses propres poids.
-        """
-        # deltas[1] · W[0]^T redonne un vecteur de la taille de l'entrée du MLP
-        # ce vecteur EST le gradient qui remonte vers le flatten/pooling du CNN
-        return np.dot(self._last_deltas[1], self.poids[0].T)
 
     def step(self, x, label_vector):
         """
@@ -122,11 +108,16 @@ class MLP:
         x            : vecteur flatten issu du CNN (1, N)
         label_vector : vecteur one-hot cible       (1, nb_classes)
         """
-        activations        = self.feedforward(x)
-        self._last_deltas  = self.delta_mat(label_vector, activations)
+        # Forward : vecteur (1,N) → liste d'activations
+        activations = self.feedforward(x)
+        # Calcul des deltas couche par couche
+        self._last_deltas = self.delta_mat(label_vector, activations)
+        # Mise à jour des poids et biais du MLP
         self.backwardpropagation(self._last_deltas, activations)
-        # On renvoie le gradient vers le CNN
-        return np.dot(self._last_deltas[1], self.poids[0].T)  # vecteur (1, N)
+        # Gradient à renvoyer au CNN
+        # deltas[1] · W[0]^T → vecteur (1, N)
+        # chaque valeur = "de combien cette feature a contribué à l'erreur"
+        return np.dot(self._last_deltas[1], self.poids[0].T)
 
 
     def save(self, chemin="mlp_poids.txt"):
@@ -149,10 +140,15 @@ class MLP:
 
 
     def _sigmoid(self, z):
-        # z est un vecteur, sigmoid est appliquée neurone par neurone
+        # z est un vecteur, sigmoid appliquée neurone par neurone
         return 1 / (1 + np.exp(-z))
 
     def _sigmoid_deriv(self, a):
         # a est DÉJÀ une activation sigmoid (pas un z brut)
-        # la dérivée σ'(z) = σ(z)·(1-σ(z)) s'écrit simplement a·(1-a)
+        # σ'(z) = σ(z)·(1-σ(z)) = a·(1-a)
         return a * (1 - a)
+
+    def _softmax(self, z):
+        # la somme des sorties = 1
+        exps = np.exp(z - np.max(z))
+        return exps / np.sum(exps)
