@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class MLP:
     def __init__(self, neuronnes, app):
         """
@@ -23,7 +22,6 @@ class MLP:
             B = np.zeros((1, n_suiv))
             self.poids.append(W)
             self.biais.append(B)
-
 
     def feedforward(self, x):
         """
@@ -51,8 +49,7 @@ class MLP:
                 activation = self._sigmoid(z)
             activations.append(activation)
 
-        return activations  # activations[-1] = vecteur de probas, somme = 1
-
+        return activations[-1]  # activations[-1] = vecteur de probas, somme = 1
 
     def delta_mat(self, label_vector, activations):
         """
@@ -64,24 +61,28 @@ class MLP:
 
         Retourne : liste de vecteurs delta, un par couche
                    deltas[-1] = erreur en sortie
-                   deltas[1]  = gradient à renvoyer vers le CNN
+                   deltas[1]  = gradient à renvoyer vers le CNN (couche d'entrée exclue)
         """
         # On initialise tous les deltas à zéro, même forme que les activations
         deltas = [np.zeros_like(a) for a in activations]
 
-        deltas[-1] = activations[-1] - label_vector
+        # Couche de sortie
+        # Erreur = différence entre ce qu'on voulait et ce qu'on a obtenu (vecteur)
+        erreur_sortie = label_vector - activations[-1]
+        # Delta sortie = erreur * dérivée sigmoid (neurone par neurone)
+        deltas[-1] = erreur_sortie * self._sigmoid_deriv(activations[-1])
 
-
-        # On remonte de l'avant-dernière vers la deuxième
+        # Couches cachées (on remonte de l'avant-dernière vers la deuxième)
         # On s'arrête à i=1 : deltas[0] (entrée) n'a pas de poids à mettre à jour
         for i in range(len(self.poids) - 1, 0, -1):
-            # On propage le delta suivant à travers W^T
+            # On propage le delta suivant à travers W^T pour obtenir l'erreur de cette couche
+            # erreur_prop est un vecteur (1, n_couche_i)
             erreur_prop = np.dot(deltas[i + 1], self.poids[i].T)
-            # Delta couche i = erreur propagée * dérivée sigmoid
+            # Delta couche i = erreur propagée * dérivée sigmoid de cette couche
             deltas[i] = erreur_prop * self._sigmoid_deriv(activations[i])
 
         return deltas
-        # deltas[1] contient le gradient à rétropropager vers le CNN
+        # Note : deltas[1] contient le gradient à rétropropager vers ton CNN
 
     def backwardpropagation(self, deltas, activations):
         """
@@ -89,16 +90,29 @@ class MLP:
         À appeler juste après delta_mat().
 
         Pour chaque couche i :
-            ΔW = activation[i]^T · delta[i+1]   (produit externe → matrice)
+            ΔW = activation[i]^T · delta[i+1]   (produit externe de deux vecteurs → matrice)
             W  = W + lr * ΔW
             b  = b + lr * delta[i+1]
         """
         for i in range(len(self.poids)):
-            # produit externe entre vecteur activation et vecteur delta → matrice gradient
+            # gradient est une matrice (n_i, n_i+1) : variation idéale de chaque poids
+            # c'est le produit externe entre le vecteur activation et le vecteur delta
             gradient       = np.dot(activations[i].T, deltas[i + 1])
             self.poids[i] += self.app * gradient
             self.biais[i] += self.app * deltas[i + 1]
 
+
+    def gradient_vers_cnn(self):
+        """
+        À appeler après delta_mat() pour récupérer le gradient
+        à rétropropager dans les couches convolutives du CNN.
+
+        Retourne un vecteur (1, taille_entree) que le CNN utilisera
+        pour mettre à jour ses propres poids.
+        """
+        # deltas[1] · W[0]^T redonne un vecteur de la taille de l'entrée du MLP
+        # ce vecteur EST le gradient qui remonte vers le flatten/pooling du CNN
+        return np.dot(self._last_deltas[1], self.poids[0].T)
 
     def step(self, x, label_vector):
         """
@@ -108,16 +122,11 @@ class MLP:
         x            : vecteur flatten issu du CNN (1, N)
         label_vector : vecteur one-hot cible       (1, nb_classes)
         """
-        # Forward : vecteur (1,N) → liste d'activations
-        activations = self.feedforward(x)
-        # Calcul des deltas couche par couche
-        self._last_deltas = self.delta_mat(label_vector, activations)
-        # Mise à jour des poids et biais du MLP
+        activations        = self.feedforward(x)
+        self._last_deltas  = self.delta_mat(label_vector, activations)
         self.backwardpropagation(self._last_deltas, activations)
-        # Gradient à renvoyer au CNN
-        # deltas[1] · W[0]^T → vecteur (1, N)
-        # chaque valeur = "de combien cette feature a contribué à l'erreur"
-        return np.dot(self._last_deltas[1], self.poids[0].T)
+        # On renvoie le gradient vers le CNN
+        return np.dot(self._last_deltas[1], self.poids[0].T)  # vecteur (1, N)
 
 
     def save(self, chemin="mlp_poids.txt"):
@@ -140,12 +149,12 @@ class MLP:
 
 
     def _sigmoid(self, z):
-        # z est un vecteur, sigmoid appliquée neurone par neurone
+        # z est un vecteur, sigmoid est appliquée neurone par neurone
         return 1 / (1 + np.exp(-z))
 
     def _sigmoid_deriv(self, a):
         # a est DÉJÀ une activation sigmoid (pas un z brut)
-        # σ'(z) = σ(z)·(1-σ(z)) = a·(1-a)
+        # la dérivée σ'(z) = σ(z)·(1-σ(z)) s'écrit simplement a·(1-a)
         return a * (1 - a)
 
     def _softmax(self, z):

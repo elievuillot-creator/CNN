@@ -1,5 +1,6 @@
 # Construction de la structure
 import numpy as np
+from ReseauClassique2 import MLP
 class CNN:
 
     def __init__(self, filtersize, NbConvolution, NbFilters):
@@ -12,6 +13,7 @@ class CNN:
         self.Deep = []
         self.Deep.append(3)
         self.Biais = {}
+        self.mlp = None
 
         # calcul des nb de cannaux par filtres de chaque convolution :
         for i in range(1, NbConvolution):
@@ -134,15 +136,11 @@ class CNN:
             self.resultconvul[i] = self.ConvoAgre(img, i)
             img = self.resultconvul[i]
         vector_flat = self.flatten(img)
-        return img
+        x = vector_flat.shape[0]
+        if self.mlp is None:
+            self.mlp = MLP([vector_flat.shape[0], 256, 2], 0.01)
+        return self.mlp.feedforward(vector_flat)
 
-
-# tu ne doit pas return vector_flat ducoup ? sinon ca va pas marcher
-
-
-    def softmax(self, vecteur):
-        exps = np.exp(vecteur - np.max(vecteur))  # fonction mathématique
-        return exps / np.sum(exps)
 
         # Convertit les scores bruts en probabilités (somme = 1).
         pass
