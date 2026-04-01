@@ -137,7 +137,7 @@ class CNN:
         return img
 
 
-
+# tu ne doit pas return vector_flat ducoup ? sinon ca va pas marcher
 
 
     def softmax(self, vecteur):
