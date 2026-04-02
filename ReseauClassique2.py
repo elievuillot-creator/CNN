@@ -2,12 +2,10 @@ import numpy as np
 
 class MLP:
     def __init__(self, neuronnes, app):
-        """
-        neuronnes : liste des tailles de couches, ex: [512, 256, 47]
-                    neuronnes[0] = taille du vecteur d'entrée (sortie flatten du CNN)
-                    neuronnes[-1] = nombre de classes en sortie
-        app       : taux d'apprentissage
-        """
+
+        #neuronnes : liste des tailles de couches, ex: [512, 256, 47] neuronnes[0] = taille du vecteur d'entrée (sortie flatten du CNN) neuronnes[-1] = nombre de classes en sortie
+        #app       : taux d'apprentissage
+
         self.neuronnes = neuronnes
         self.app = app
         self.poids = []  # liste de matrices W, une par couche
@@ -24,16 +22,7 @@ class MLP:
             self.biais.append(B)
 
     def feedforward(self, x):
-        """
-        x : vecteur 1D ou (1, N) — typiquement la sortie aplatie (flatten) du CNN
 
-        Couches cachées → sigmoid
-        Couche de sortie → softmax (somme = 1, interprétable comme des probas)
-
-        Retourne : liste de tous les vecteurs d'activation, entrée comprise
-                   activations[0]  = vecteur d'entrée  (1, N)
-                   activations[-1] = vecteur de sortie (1, nb_classes) somme = 1
-        """
         # On force le vecteur en forme (1, N) pour les produits matriciels
         activation = x.reshape(1, -1)
         activations = [activation]  # on garde TOUTES les activations pour la backprop
@@ -53,17 +42,7 @@ class MLP:
         return activations[-1]  # activations[-1] = vecteur de probas, somme = 1
 
     def delta_mat(self, label_vector, activations):
-        """
-        label_vector : vecteur cible (1, nb_classes), ex: [0,0,1,0,...] (one-hot)
-        activations  : liste renvoyée par feedforward()
 
-        La backprop calcule pour chaque couche un vecteur delta :
-            delta = "à quel point chaque neurone a contribué à l'erreur"
-
-        Retourne : liste de vecteurs delta, un par couche
-                   deltas[-1] = erreur en sortie
-                   deltas[1]  = gradient à renvoyer vers le CNN (couche d'entrée exclue)
-        """
         # On initialise tous les deltas à zéro, même forme que les activations
         deltas = [np.zeros_like(a) for a in activations]
 
@@ -86,15 +65,7 @@ class MLP:
         # Note : deltas[1] contient le gradient à rétropropager vers ton CNN
 
     def backwardpropagation(self, deltas, activations):
-        """
-        Met à jour les poids et biais de chaque couche.
-        À appeler juste après delta_mat().
 
-        Pour chaque couche i :
-            ΔW = activation[i]^T · delta[i+1]   (produit externe de deux vecteurs → matrice)
-            W  = W + lr * ΔW
-            b  = b + lr * delta[i+1]
-        """
         for i in range(len(self.poids)):
             # gradient est une matrice (n_i, n_i+1) : variation idéale de chaque poids
             # c'est le produit externe entre le vecteur activation et le vecteur delta
@@ -104,13 +75,11 @@ class MLP:
 
 
     def gradient_vers_cnn(self):
-        """
-        À appeler après delta_mat() pour récupérer le gradient
-        à rétropropager dans les couches convolutives du CNN.
 
-        Retourne un vecteur (1, taille_entree) que le CNN utilisera
-        pour mettre à jour ses propres poids.
-        """
+        #À appeler après delta_mat() pour récupérer le gradient à rétropropager dans les couches convolutives du CNN.
+
+        #Retourne un vecteur (1, taille_entree) que le CNN utilisera pour mettre à jour ses propres poids.
+
         # deltas[1] · W[0]^T redonne un vecteur de la taille de l'entrée du MLP
         # ce vecteur EST le gradient qui remonte vers le flatten/pooling du CNN
         return np.dot(self._last_deltas[1], self.poids[0].T)

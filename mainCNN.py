@@ -45,7 +45,7 @@ def train(cnn, dataset, nb_epochs=10):
             loss = -np.sum(label_vec * np.log(output + 1e-8))
             total_loss += loss
             cnn.mlp.step(cnn._last_flat, label_vec)
-        print(f"Epoch {epoch+1}/{nb_epochs} | Loss moyenne : {total_loss/len(dataset):.4f}")
+
 
 
 # --- Main ---
