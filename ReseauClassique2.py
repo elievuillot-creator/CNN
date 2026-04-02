@@ -49,6 +49,7 @@ class MLP:
                 activation = self._sigmoid(z)
             activations.append(activation)
 
+        self._last_activations = activations
         return activations[-1]  # activations[-1] = vecteur de probas, somme = 1
 
     def delta_mat(self, label_vector, activations):
@@ -115,18 +116,10 @@ class MLP:
         return np.dot(self._last_deltas[1], self.poids[0].T)
 
     def step(self, x, label_vector):
-        """
-        Enchaîne forward + backward en un seul appel.
-        Retourne le gradient à remonter vers le CNN.
-
-        x            : vecteur flatten issu du CNN (1, N)
-        label_vector : vecteur one-hot cible       (1, nb_classes)
-        """
-        activations        = self.feedforward(x)
-        self._last_deltas  = self.delta_mat(label_vector, activations)
-        self.backwardpropagation(self._last_deltas, activations)
-        # On renvoie le gradient vers le CNN
-        return np.dot(self._last_deltas[1], self.poids[0].T)  # vecteur (1, N)
+        self.feedforward(x)  # remplit self._last_activations
+        self._last_deltas = self.delta_mat(label_vector, self._last_activations)
+        self.backwardpropagation(self._last_deltas, self._last_activations)
+        return np.dot(self._last_deltas[1], self.poids[0].T)
 
 
     def save(self, chemin="mlp_poids.txt"):

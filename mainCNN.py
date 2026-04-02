@@ -1,40 +1,58 @@
-import CNN as CNN
+import CNN as module_CNN
 import TraitementDonnées as td
 import ReseauClassique2 as RC
 import numpy as np
+import os
+from PIL import Image
 
-img = td.image_to_pixel_matrix("données/chien.png")
 
+def charger_dataset(dossier_chien, dossier_chat, limite=500, taille=(64, 64)):
+    dataset = []
 
-CNN = CNN.CNN(3, 3, [1,2,2])
+    images_chien = [f for f in os.listdir(dossier_chien)
+                    if f.endswith(".jpg") or f.endswith(".png")][:limite]
+    for nom_fichier in images_chien:
+        chemin = os.path.join(dossier_chien, nom_fichier)
+        try:
+            img = Image.open(chemin).convert("RGB").resize(taille)
+            img = np.array(img)
+            dataset.append((img, [1, 0]))
+        except:
+            continue
 
-  # 1 couche caché de 256 neuronnes, et 2 classes de sorties
-print(CNN.UltimateForward(img))
+    images_chat = [f for f in os.listdir(dossier_chat)
+                   if f.endswith(".jpg") or f.endswith(".png")][:limite]
+    for nom_fichier in images_chat:
+        chemin = os.path.join(dossier_chat, nom_fichier)
+        try:
+            img = Image.open(chemin).convert("RGB").resize(taille)
+            img = np.array(img)
+            dataset.append((img, [0, 1]))
+        except:
+            continue
+
+    np.random.shuffle(dataset)
+    print(f"Dataset chargé : {len(dataset)} images")
+    return dataset
+
 
 def train(cnn, dataset, nb_epochs=10):
-    """
-    dataset : liste de tuples (chemin_image, label_one_hot)
-              ex: [("données/chien.png", [1,0]), ("données/chat.png", [0,1]), ...]
-    """
     for epoch in range(nb_epochs):
         total_loss = 0
-
-        for chemin_img, label in dataset:
-            # Chargement et forward pass CNN
-            img = td.image_to_pixel_matrix(chemin_img)
+        for img, label in dataset:
             output = cnn.UltimateForward(img)
-
-            # Calcul de la loss (cross-entropy)
             label_vec = np.array(label).reshape(1, -1)
             loss = -np.sum(label_vec * np.log(output + 1e-8))
             total_loss += loss
-
-            # Backward pass via le MLP
-            cnn.mlp.step(cnn.mlp._last_input, label_vec)
-
+            cnn.mlp.step(cnn._last_flat, label_vec)
         print(f"Epoch {epoch+1}/{nb_epochs} | Loss moyenne : {total_loss/len(dataset):.4f}")
 
 
+# --- Main ---
+DOSSIER_CHIEN = r'C:\Users\Vuillot\Downloads\PetImages\Dog'
+DOSSIER_CHAT  = r'C:\Users\Vuillot\Downloads\PetImages\Cat'
 
+dataset = charger_dataset(DOSSIER_CHIEN, DOSSIER_CHAT, limite=500)
 
-
+cnn = module_CNN.CNN(3, 3, [1, 2, 2])
+train(cnn, dataset, nb_epochs=20)

@@ -139,8 +139,8 @@ class CNN:
         x = vector_flat.shape[0]
         if self.mlp is None:
             self.mlp = MLP([vector_flat.shape[0], 256, 2], 0.01)
+        self._last_flat = vector_flat
         return self.mlp.feedforward(vector_flat)
-
 
         # Convertit les scores bruts en probabilités (somme = 1).
         pass
